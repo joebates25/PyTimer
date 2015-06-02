@@ -28,7 +28,7 @@ def ring_timer_sec(seconds):
 
     if verbose:
         print("\nTimer complete.")
-    os.system("afplay " + sound)
+
 
 def constructSummary(interval_length, repeat):
     summary = "Timer will ring "
@@ -56,6 +56,8 @@ def ring_timer_interval(interval_length, repeat = 1):
             print("Random repetitions selected: " + str(repeat))
 
     for x in range(repeat):
+        if verbose:
+            print("Beginning repetition " + str(x + 1) + " of " + str(repeat))
         if type(interval_length) is tuple:
             ring_timer_sec(random.randint(interval_length[0], interval_length[1]) * 1.0)
         else:
@@ -65,10 +67,10 @@ def ring_timer_interval(interval_length, repeat = 1):
 
 parser = argparse.ArgumentParser()
 parser.add_argument("minutes", action="store", nargs="*")
-parser.add_argument("-seconds", action="store_true")
-parser.add_argument("-repeat", nargs="*", type=int)
-parser.add_argument("-verbose", action="store_true")
-parser.add_argument("-sound", action="store", nargs="?")
+parser.add_argument("-seconds", "-s", action="store_true", help="Set if input should be interpreted as seconds")
+parser.add_argument("-repeat", "-r",  nargs="*", type=int, help="Specifies fixed (or random if 2 values given) number of repetitions")
+parser.add_argument("-verbose", "-v", action="store_true", help="Set to have output printed")
+parser.add_argument("-sound", action="store", nargs="?", help="Set new sound to be played")
 
 
 parsed_args = parser.parse_args()
@@ -88,7 +90,7 @@ if parsed_args.seconds:
     seconds = 1
 
 if len(parsed_args.minutes) == 1:
-    minutes = int(parsed_args.minutes[0] * seconds)
+    minutes = int(parsed_args.minutes[0]) * seconds
 else:
     minutes = (int(parsed_args.minutes[0]) * seconds, int(parsed_args.minutes[1]) * seconds)
 
