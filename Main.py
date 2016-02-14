@@ -24,7 +24,7 @@ def init_parse_args():
 
 
 
-
+#Returns error flag and error messages
 def validate_args(args):
     is_valid = True
     arg_errors = []
