@@ -8,7 +8,8 @@ import sys
 
 
 def init_parse_args():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description="To set an alarm sound file, set an env variable PyTimerAlarm to the absolute file path")
+
     parser.add_argument("minutes", action="store", nargs="*")
     parser.add_argument("-seconds", "-s", action="store_true", help="Set if input should be interpreted as seconds")
     parser.add_argument("-repeat", "-r",  nargs="*", type=int, help="Specifies fixed (or random if 2 values given) number of repetitions")
@@ -22,8 +23,26 @@ def init_parse_args():
     return parser.parse_args()
 
 
+
+
+def validate_args(args):
+    is_valid = True
+    arg_errors = []
+    if (args.repeat is not None):
+        if (len(args.repeat) == 0 or len(args.repeat) > 2):
+            is_valid = False
+            arg_errors.append("Invalid number of parameters: -r")
+
+    if (len(args.minutes) == 0 or len(args.minutes) > 2):
+            is_valid = False
+            arg_errors.append("Invalid number of parameters: minutes")
+
+    return is_valid, arg_errors
+
 verbose = True
 parsed_args = init_parse_args()
+
+
 ALARM_SOUND_ENVIRONMENT_VARIABLE = "PyTimerAlarm"
 
 
@@ -67,24 +86,6 @@ def standby(seconds):
 def getSoundFilePath():
     return os.environ[ALARM_SOUND_ENVIRONMENT_VARIABLE]
 
-
-def ring_timer_sec(seconds):
-    print_verbose("Ringing in " + seconds_to_time_string(seconds))
-    print_verbose("Beginning timer: ")
-    index = 0
-    for x in range(int(seconds)):
-        if verbose:
-            count = int(seconds) - index
-            sys.stdout.write("\rCountdown:..." + seconds_to_time_string(count))
-            sys.stdout.flush()
-            index += 1
-        time.sleep(1)
-
-    print_verbose("\nTimer complete.")
-    if (parsed_args.sound != "None" and parsed_args.sound != "n"):
-        os.system("afplay " + sound)
-    if parsed_args.exec is not None:
-        os.system("./" + str(parsed_args.exec[0]))
 
 def timer_sec(seconds):
     print_verbose("Complete in " + seconds_to_time_string(seconds))
@@ -174,47 +175,51 @@ def stopwatch():
 
 def main():
 
+    if (validate_args(parsed_args)[0]):
+        sound = "~/alarmsounds/siren.wav"
 
-    sound = "~/alarmsounds/siren.wav"
-
-    print_verbose("Timer sound: " + sound)
+        print_verbose("Timer sound: " + sound)
 
 
-    if len(sys.argv) == 1 or parsed_args.stop:
-        stopwatch()
+        if len(sys.argv) == 1 or parsed_args.stop:
+            stopwatch()
+        else:
+
+            verbose = not parsed_args.verbose
+
+
+
+            if parsed_args.sound is not None:
+                if parsed_args.sound.endswith(".wav"):
+                    sound = "~/alarmsounds/" + parsed_args.sound
+                else:
+                    sound = "~/alarmsounds/" + parsed_args.sound + ".wav"
+            print_verbose("Sound playing: " + sound)
+
+            #TODO: Add verbose status about script to be run
+            seconds = 60
+
+            if parsed_args.seconds:
+                seconds = 1
+
+            if len(parsed_args.minutes) == 1:
+                minutes = int(parsed_args.minutes[0]) * seconds
+            else:
+                minutes = (int(parsed_args.minutes[0]) * seconds, int(parsed_args.minutes[1]) * seconds)
+
+            if parsed_args.repeat is not None:
+                if len(parsed_args.repeat) == 1:
+                    repeat = int(parsed_args.repeat[0])
+                else:
+                    repeat = (int(parsed_args.repeat[0]), int(parsed_args.repeat[1]))
+            else:
+                repeat = 1
+
+            ring_timer_interval(minutes, repeat)
     else:
-
-        verbose = not parsed_args.verbose
-
-
-
-        if parsed_args.sound is not None:
-            if parsed_args.sound.endswith(".wav"):
-                sound = "~/alarmsounds/" + parsed_args.sound
-            else:
-                sound = "~/alarmsounds/" + parsed_args.sound + ".wav"
-        print_verbose("Sound playing: " + sound)
-
-        #TODO: Add verbose status about script to be run
-        seconds = 60
-
-        if parsed_args.seconds:
-            seconds = 1
-
-        if len(parsed_args.minutes) == 1:
-            minutes = int(parsed_args.minutes[0]) * seconds
-        else:
-            minutes = (int(parsed_args.minutes[0]) * seconds, int(parsed_args.minutes[1]) * seconds)
-
-        if parsed_args.repeat is not None:
-            if len(parsed_args.repeat) == 1:
-                repeat = int(parsed_args.repeat[0])
-            else:
-                repeat = (int(parsed_args.repeat[0]), int(parsed_args.repeat[1]))
-        else:
-            repeat = 1
-
-        ring_timer_interval(minutes, repeat)
+        print("Timer could not be run for the following reasons: ")
+        for error in validate_args(parsed_args)[1]:
+            print(error)
 
 
 
