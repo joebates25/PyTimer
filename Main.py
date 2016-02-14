@@ -33,7 +33,7 @@ def validate_args(args):
             is_valid = False
             arg_errors.append("Invalid number of parameters: -r")
 
-    if (len(args.minutes) == 0 or len(args.minutes) > 2):
+    if ((len(args.minutes) > 2)):
             is_valid = False
             arg_errors.append("Invalid number of parameters: minutes")
 
