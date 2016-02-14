@@ -6,7 +6,6 @@ import random
 import argparse
 import sys
 
-ALARM_SOUND_ENVIRONMENT_VARIABLE = "PyTimerAlarm"
 
 def init_parse_args():
     parser = argparse.ArgumentParser()
@@ -21,6 +20,11 @@ def init_parse_args():
 
 
     return parser.parse_args()
+
+
+verbose = True
+parsed_args = init_parse_args()
+ALARM_SOUND_ENVIRONMENT_VARIABLE = "PyTimerAlarm"
 
 
 #Converts seconds value to formatted hour:date:second string
@@ -42,17 +46,12 @@ def seconds_to_time_string(s):
 
 
 
-verbose = False
+
 
 def print_verbose(s):
     if verbose:
         print(s)
 
-
-
-sound = "~/alarmsounds/siren.wav"
-
-print_verbose("Timer sound: " + sound)
 
 def standby(seconds):
     index = 0
@@ -66,8 +65,7 @@ def standby(seconds):
 
 #Check OS Env for sound path
 def getSoundFilePath():
-    import os
-    return os.environp[ALARM_SOUND_ENVIRONMENT_VARIABLE]
+    return os.environ[ALARM_SOUND_ENVIRONMENT_VARIABLE]
 
 
 def ring_timer_sec(seconds):
@@ -111,7 +109,7 @@ def timer_sec(seconds):
 def ring_alarm():
     path = getSoundFilePath()
     if path != "":
-        if os._exists(path):
+        if os.path.exists(path):
             os.system("afplay " + path)
         else:
             print_verbose("The file " + path + " cannot be found. Please verify it exists.")
@@ -119,7 +117,7 @@ def ring_alarm():
 def execute_scripts():
     if parsed_args.exec is not None:
        for script in parsed_args.exec:
-           if os.exists(script):
+           if os.path.exists(script):
                os.system("./" + str(script))
            else:
                 print_verbose("The shell script " + script + " could not be found. Please verify it exists.")
@@ -151,9 +149,9 @@ def ring_timer_interval(interval_length, repeat = 1):
     for x in range(repeat):
         print_verbose("Beginning repetition " + str(x + 1) + " of " + str(repeat))
         if type(interval_length) is tuple:
-            ring_timer_sec(random.randint(interval_length[0], interval_length[1]) * 1.0)
+            timer_sec(random.randint(interval_length[0], interval_length[1]) * 1.0)
         else:
-            ring_timer_sec(interval_length)
+            timer_sec(interval_length)
 
 def list_to_string(l):
     st = ""
@@ -173,44 +171,52 @@ def stopwatch():
 
 
 
-parsed_args =  init_parse_args()
 
-if len(sys.argv) == 1 or parsed_args.stop:
-    stopwatch()
-else:
-
-    verbose = not parsed_args.verbose
+def main():
 
 
+    sound = "~/alarmsounds/siren.wav"
 
-    if parsed_args.sound is not None:
-        if parsed_args.sound.endswith(".wav"):
-            sound = "~/alarmsounds/" + parsed_args.sound
-        else:
-            sound = "~/alarmsounds/" + parsed_args.sound + ".wav"
-    print_verbose("Sound playing: " + sound)
+    print_verbose("Timer sound: " + sound)
 
-    #TODO: Add verbose status about script to be run
-    seconds = 60
 
-    if parsed_args.seconds:
-        seconds = 1
-
-    if len(parsed_args.minutes) == 1:
-        minutes = int(parsed_args.minutes[0]) * seconds
+    if len(sys.argv) == 1 or parsed_args.stop:
+        stopwatch()
     else:
-        minutes = (int(parsed_args.minutes[0]) * seconds, int(parsed_args.minutes[1]) * seconds)
 
-    if parsed_args.repeat is not None:
-        if len(parsed_args.repeat) == 1:
-            repeat = int(parsed_args.repeat[0])
+        verbose = not parsed_args.verbose
+
+
+
+        if parsed_args.sound is not None:
+            if parsed_args.sound.endswith(".wav"):
+                sound = "~/alarmsounds/" + parsed_args.sound
+            else:
+                sound = "~/alarmsounds/" + parsed_args.sound + ".wav"
+        print_verbose("Sound playing: " + sound)
+
+        #TODO: Add verbose status about script to be run
+        seconds = 60
+
+        if parsed_args.seconds:
+            seconds = 1
+
+        if len(parsed_args.minutes) == 1:
+            minutes = int(parsed_args.minutes[0]) * seconds
         else:
-            repeat = (int(parsed_args.repeat[0]), int(parsed_args.repeat[1]))
-    else:
-        repeat = 1
+            minutes = (int(parsed_args.minutes[0]) * seconds, int(parsed_args.minutes[1]) * seconds)
 
-    ring_timer_interval(minutes, repeat)
+        if parsed_args.repeat is not None:
+            if len(parsed_args.repeat) == 1:
+                repeat = int(parsed_args.repeat[0])
+            else:
+                repeat = (int(parsed_args.repeat[0]), int(parsed_args.repeat[1]))
+        else:
+            repeat = 1
 
-def __main__():
-    print("Hello World!")
+        ring_timer_interval(minutes, repeat)
 
+
+
+if __name__ == "__main__":
+    main()
