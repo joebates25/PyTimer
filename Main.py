@@ -20,7 +20,7 @@ def init_parse_args():
     parser.add_argument("-stand", action="store", nargs=1, help="Starts stopwatch")
 
 
-    return parser.parse_args()
+    return parser
 
 
 
@@ -32,15 +32,28 @@ def validate_args(args):
         if (len(args.repeat) == 0 or len(args.repeat) > 2):
             is_valid = False
             arg_errors.append("Invalid number of parameters: -r")
+        elif (len(args.repeat) == 2):
+            if (args.repeat[0] > args.repeat[1]):
+                is_valid = False
+                arg_errors.append("Invalid order of parameters: -r")
 
     if ((len(args.minutes) > 2)):
             is_valid = False
             arg_errors.append("Invalid number of parameters: minutes")
+    elif (len(args.minutes) == 2):
+        if (args.minutes[0] > args.minutes[1]):
+            is_valid = False
+            arg_errors.append("Invalid order of parameters: minutes")
+
+    if args.exec is not None:
+        if len(args.exec) == 0:
+            is_valid = False
+            arg_errors.append("Invalid number of parameters: -exec")
 
     return is_valid, arg_errors
 
 verbose = True
-parsed_args = init_parse_args()
+parsed_args = init_parse_args().parse_args()
 
 
 ALARM_SOUND_ENVIRONMENT_VARIABLE = "PyTimerAlarm"
