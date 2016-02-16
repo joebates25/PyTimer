@@ -9,3 +9,5 @@
 3 4 -r 4 4
 3 3 -r 4 4
 3 3 -r 4 5
+3 4 -sound
+3 4 -sound Hello.wav

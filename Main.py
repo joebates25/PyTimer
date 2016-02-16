@@ -6,6 +6,8 @@ import random
 import argparse
 import sys
 
+alarm_sound = ""
+
 
 def init_parse_args():
     parser = argparse.ArgumentParser(description="To set an alarm sound file, set an env variable PyTimerAlarm to the absolute file path")
@@ -14,7 +16,7 @@ def init_parse_args():
     parser.add_argument("-seconds", "-s", action="store_true", help="Set if input should be interpreted as seconds")
     parser.add_argument("-repeat", "-r",  nargs="*", type=int, help="Specifies fixed, random, or infinite number of repetitions")
     parser.add_argument("-verbose", "-v", action="store_true", help="Call to turn off printing")
-    parser.add_argument("-sound", action="store", nargs="?", help="Set new sound to be played. Set to 'None' for no sound.")
+    parser.add_argument("-sound", action="store", nargs="*", help="Set new sound to be played. Set to 'None' for no sound.")
     parser.add_argument("-exec", "-e", action="store", nargs="*", help="Scripts to be executed when timer is complete.")
     parser.add_argument("-stop", action="store_true", help="Starts stopwatch")
     parser.add_argument("-stand", action="store", nargs=1, help="Starts stopwatch")
@@ -52,6 +54,11 @@ def validate_args(args):
         if len(args.exec) == 0:
             is_valid = False
             arg_errors.append("Invalid number of parameters: -exec")
+
+    if args.sound is not None:
+         if len(args.sound) > 1:
+             is_valid = False
+             arg_errors.append("Invalid number of parameters: -sound")
 
     return is_valid, arg_errors
 
@@ -124,7 +131,8 @@ def timer_sec(seconds):
 
 #TODO: Add checking for sound file override in parsed args
 def ring_alarm():
-    path = getSoundFilePath()
+
+    path = alarm_sound
     if path != "":
         if os.path.exists(path):
             os.system("afplay " + path)
@@ -205,6 +213,7 @@ def stopwatch():
 
 
 def main():
+    global alarm_sound
 
     if (validate_args(parsed_args)[0]):
         sound = getSoundFilePath()
@@ -216,15 +225,15 @@ def main():
             stopwatch()
         else:
 
-            verbose = not parsed_args.verbose
-
-
+            verbose =  parsed_args.verbose
 
             if parsed_args.sound is not None:
-                if parsed_args.sound.endswith(".wav"):
-                    sound = "~/alarmsounds/" + parsed_args.sound
+                if len(parsed_args.sound) == 0:
+                    alarm_sound = "";
                 else:
-                    sound = "~/alarmsounds/" + parsed_args.sound + ".wav"
+                    alarm_sound = parsed_args.sound[0]
+            else:
+                alarm_sound = getSoundFilePath()
             print_verbose("Sound playing: " + sound)
 
             #TODO: Add verbose status about script to be run
