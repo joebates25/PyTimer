@@ -41,6 +41,10 @@ def validate_args(args):
             if (args.repeat[0] > args.repeat[1]):
                 is_valid = False
                 arg_errors.append("Invalid order of parameters: -r")
+            elif (args.repeat[0] == 0 and args.repeat[1] is not 0):
+                is_valid = False
+                arg_errors.append("Invalid parameters: -r")
+
 
     if ((len(args.minutes) > 2)):
             is_valid = False
@@ -87,9 +91,6 @@ def seconds_to_time_string(s):
 
 
 
-
-
-
 def print_verbose(s):
     if verbose:
         print(s)
@@ -128,10 +129,7 @@ def timer_sec(seconds):
         ring_alarm()
 
 
-
-#TODO: Add checking for sound file override in parsed args
 def ring_alarm():
-
     path = alarm_sound
     if path != "":
         if os.path.exists(path):
@@ -148,6 +146,7 @@ def execute_scripts():
                 print_verbose("The shell script " + script + " could not be found. Please verify it exists.")
 
 
+#TODO: update sumamry
 def constructSummary(interval_length, repeat):
     summary = "Timer will ring "
     if type(interval_length) == tuple:
@@ -207,9 +206,6 @@ def stopwatch():
         sys.stdout.flush()
         time.sleep(1)
         time_counted += 1
-
-
-
 
 
 def main():
