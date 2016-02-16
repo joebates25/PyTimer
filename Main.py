@@ -12,12 +12,15 @@ def init_parse_args():
 
     parser.add_argument("minutes", action="store", nargs="*")
     parser.add_argument("-seconds", "-s", action="store_true", help="Set if input should be interpreted as seconds")
-    parser.add_argument("-repeat", "-r",  nargs="*", type=int, help="Specifies fixed (or random if 2 values given) number of repetitions")
+    parser.add_argument("-repeat", "-r",  nargs="*", type=int, help="Specifies fixed, random, or infinite number of repetitions")
     parser.add_argument("-verbose", "-v", action="store_true", help="Call to turn off printing")
     parser.add_argument("-sound", action="store", nargs="?", help="Set new sound to be played. Set to 'None' for no sound.")
-    parser.add_argument("-exec", "-e", action="store", nargs="*", help="Set new sound to be played")
+    parser.add_argument("-exec", "-e", action="store", nargs="*", help="Scripts to be executed when timer is complete.")
     parser.add_argument("-stop", action="store_true", help="Starts stopwatch")
     parser.add_argument("-stand", action="store", nargs=1, help="Starts stopwatch")
+    #Possible future options
+    #parser.add_argument("-par", action="store_true", help="Executes scripts in seperate thread")
+    #parser.add_argument("-spar", action="store_true", help="Rings sound conncurrently with next timer")
 
 
     return parser
@@ -150,7 +153,10 @@ def constructSummary(interval_length, repeat):
     if type(repeat) == tuple:
         summary += "between " + str(repeat[0]) + " and " + str(repeat[1]) + " repetitions..."
     else:
-        summary += str(repeat) + " repetitions..."
+        if repeat == 0:
+            summary += "infinite repetitions..."
+        else:
+            summary += str(repeat) + " repetitions..."
     return summary
 
 
@@ -160,12 +166,24 @@ def ring_timer_interval(interval_length, repeat = 1):
         repeat = random.randint(repeat[0], repeat[1])
         print_verbose("Random repetitions selected: " + str(repeat))
 
-    for x in range(repeat):
-        print_verbose("Beginning repetition " + str(x + 1) + " of " + str(repeat))
-        if type(interval_length) is tuple:
-            timer_sec(random.randint(interval_length[0], interval_length[1]) * 1.0)
-        else:
-            timer_sec(interval_length)
+    if repeat == 0:
+        while True:
+            if type(interval_length) is tuple:
+                timer_sec(random.randint(interval_length[0], interval_length[1]) * 1.0)
+            else:
+                timer_sec(interval_length)
+    else:
+        for x in range(repeat):
+            print_verbose("Beginning repetition " + str(x + 1) + " of " + str(repeat))
+            if type(interval_length) is tuple:
+                timer_sec(random.randint(interval_length[0], interval_length[1]) * 1.0)
+            else:
+                timer_sec(interval_length)
+
+def ring_timer_series(series, repeat=1):
+    return 0
+
+
 
 def list_to_string(l):
     st = ""
@@ -189,7 +207,7 @@ def stopwatch():
 def main():
 
     if (validate_args(parsed_args)[0]):
-        sound = "~/alarmsounds/siren.wav"
+        sound = getSoundFilePath()
 
         print_verbose("Timer sound: " + sound)
 
