@@ -7,6 +7,45 @@ import sys
 import random
 import argparse
 
+class _Getch:
+    """Gets a single character from standard input.  Does not echo to the
+screen."""
+    def __init__(self):
+        try:
+            self.impl = _GetchWindows()
+        except ImportError:
+            self.impl = _GetchUnix()
+
+    def __call__(self): return self.impl()
+
+
+class _GetchUnix:
+    def __init__(self):
+        import tty, sys
+
+    def __call__(self):
+        import sys, tty, termios
+        fd = sys.stdin.fileno()
+        old_settings = termios.tcgetattr(fd)
+        try:
+            tty.setraw(sys.stdin.fileno())
+            ch = sys.stdin.read(1)
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+        return ch
+
+
+class _GetchWindows:
+    def __init__(self):
+        import msvcrt
+
+    def __call__(self):
+        import msvcrt
+        return msvcrt.getch()
+
+
+
+
 
 class Sound:
     _bee = 0
@@ -46,6 +85,7 @@ class Timer(threading.Thread):
     _execScript = []
     _rand = random.random()
     _infinite = False
+    _manager = None
 
     def __init__(self, newTimer=None, manager=None, infinite = False):
         '''
@@ -66,7 +106,7 @@ class Timer(threading.Thread):
 
         :return: Runs timer. This is where the timer calls its manager
         '''
-
+        self._manager.receive_Timer(self)
         startTime = time.time()
         endTime = startTime + self._time
         timeRemaining = endTime - startTime
@@ -148,7 +188,7 @@ class Timer(threading.Thread):
         if self._audioSound != None:
             self._play_sound()
         if self._infinite:
-            self._newTimer = Timer(infinite=True)
+            self._newTimer = Timer(infinite=True, manager=self._manager)
             self._newTimer.set_time(self._time)
             for script in self._execScript:
                 self._newTimer.add_script(script)
@@ -291,7 +331,7 @@ class ArgumentParser():
 
 
 class TimerAssembler():
-    def assembleTimers(self, parsed_args=None):
+    def assembleTimers(self, parsed_args=None, manager=None):
         time_arg = parsed_args.minutes
         mainTimer = None
         time = 0
@@ -318,9 +358,9 @@ class TimerAssembler():
                 time = time * 3600
 
             if mainTimer is None:
-                mainTimer = Timer(infinite=inf)
+                mainTimer = Timer(infinite=inf, manager=manager)
             else:
-                newTimer = Timer(newTimer=mainTimer)
+                newTimer = Timer(newTimer=mainTimer,  manager=manager)
                 mainTimer = newTimer
             mainTimer.set_time(time)
             mainTimer.set_verbose(parsed_args.verbose)
@@ -336,6 +376,24 @@ class TimerAssembler():
 
         return mainTimer
 
+class TimerManager():
+
+    _currentActiveTimer = None
+    def set_initial_timer(self,t):
+        self._currentActiveTimer = t
+
+    def start_Timers(self):
+        getch = _Getch()
+        self._currentActiveTimer.start()
+        while(True):
+            char = getch()
+            if str(char) == "b't'":
+                self._currentActiveTimer.toggle()
+
+
+    def receive_Timer(self, t):
+        self._currentActiveTimer = t
+
 
 if __name__ == "__main__":
     assembler = TimerAssembler()
@@ -343,8 +401,10 @@ if __name__ == "__main__":
 
     is_valid, parsed_args, errors = argParser.parse_arguments()
     if is_valid:
-        timer = assembler.assembleTimers(parsed_args)
-        timer.start()
+        manager = TimerManager()
+        timer = assembler.assembleTimers(parsed_args, manager=manager)
+        manager.set_initial_timer(timer)
+        manager.start_Timers()
     else:
         for error in errors:
             print(error)
