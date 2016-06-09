@@ -33,7 +33,7 @@ def main():
     parser = ArgumentParser(hide_errors=True)
     error_flag = False
     error_flag = test_working_strings(parser)
-    error_flag = test_failing_strings(parser)
+    error_flag = test_failing_strings(parser) if not error_flag else error_flag
 
     if not error_flag:
         print("All tests successful!")

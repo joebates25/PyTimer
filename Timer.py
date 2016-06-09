@@ -9,9 +9,7 @@ import argparse
 
 
 class Sound:
-
     _bee = 0
-
 
     def __init__(self):
         try:
@@ -20,18 +18,14 @@ class Sound:
         except ImportError:
             self._bee = 0
 
-
     def beep(self, sound):
         if self._bee == 0:
             self._mac_os_sound(sound)
         else:
             self.windows_sound(sound)
 
-
-
     def _windows_sound(self, sound):
         self._w.PlaySound('%s.wav' % sound, self._w.SND_FILENAME)
-
 
     def _mac_os_sound(self, sound):
         import os
@@ -40,7 +34,6 @@ class Sound:
 
 
 class Timer(threading.Thread):
-
     ALARM_SOUND_ENVIRONMENT_VARIABLE = "PyTimerAlarm"
     _running = True
     _finished = False
@@ -49,14 +42,12 @@ class Timer(threading.Thread):
     _pauseTime = 0
     _player = Sound()
     _reverse = False
-    _audioSound = ""##os.environ[ALARM_SOUND_ENVIRONMENT_VARIABLE]
+    _audioSound = ""  ##os.environ[ALARM_SOUND_ENVIRONMENT_VARIABLE]
     _execScript = []
     _rand = random.random()
+    _infinite = False
 
-
-
-
-    def __init__(self, newTimer = None, manager = None):
+    def __init__(self, newTimer=None, manager=None, infinite = False):
         '''
         Initilizes Timer. Sets manager to call to when timer is started as well as new Timer to call if such a timer
             exists
@@ -65,11 +56,10 @@ class Timer(threading.Thread):
         :return: Initialized Timer
         '''
         super().__init__()
-        self._newTimer = newTimer
         self._manager = manager
         self._rand = random.random()
-
-
+        self._newTimer = newTimer
+        self._infinite = infinite
 
     def run(self):
         '''
@@ -95,13 +85,11 @@ class Timer(threading.Thread):
                     self._message("Done", False)
                     sys.exit()
 
-
     def finished(self):
         '''
         :return: True if the timer is complete
         '''
         return self._finished
-
 
     def add_script(self, s):
         '''
@@ -125,7 +113,7 @@ class Timer(threading.Thread):
     def set_verbose(self, v):
         self._verbose = v
 
-    def _message(self, m, carraige = False):
+    def _message(self, m, carraige=False):
         '''
         Writes message to console
         :param m: Message to write
@@ -136,8 +124,7 @@ class Timer(threading.Thread):
             if not carraige:
                 print("\n" + m)
             else:
-                print("\r" + m, end ="")
-
+                print("\r" + m, end="")
 
     def _execute_scripts(self):
         '''
@@ -151,7 +138,6 @@ class Timer(threading.Thread):
         if self._audioSound != "":
             self._player.beep(self._audioSound)
 
-
     def _onFinished(self):
         '''
         Determines and executes proper finishing action then executes next timer if such a timer exists
@@ -161,7 +147,15 @@ class Timer(threading.Thread):
             self._execute_scripts()
         if self._audioSound != None:
             self._play_sound()
-        if self._newTimer != None:
+        if self._infinite:
+            self._newTimer = Timer(infinite=True)
+            self._newTimer.set_time(self._time)
+            for script in self._execScript:
+                self._newTimer.add_script(script)
+            self._newTimer.set_audio_sound(self._audioSound)
+            self._newTimer.set_verbose(self._verbose)
+            self._newTimer.run()
+        elif self._newTimer != None:
             self._newTimer.run()
 
 
@@ -186,54 +180,57 @@ class Timer(threading.Thread):
         :return: string: converted float to string
         '''
         hours = int(s / 3600)
-        s = s - (hours * 3600)
+        s -= (hours * 3600)
         minutes = int(s / 60)
-        s = s - (minutes * 60)
+        s -= (minutes * 60)
         seconds = int(s)
-        s = s - int(s)
+        s -= int(s)
         milliseconds = 0
         if s > 0:
             milliseconds = int(s * 1000)
         return "{0:02}:{1:02}:{2:02}:{3:04}".format(hours, minutes, seconds, milliseconds)
 
 
-
 class ArgumentParser():
-
     '''
         Wrapper class written to disable error messages from being printed to the screen in the event of testing
     '''
+
     class ArgParseWrapper(argparse.ArgumentParser):
         def error(self, message):
             pass
 
-    def __init__(self, hide_errors = False):
+    def __init__(self, hide_errors=False):
         self._parser = self._init_parsed_args(hide_errors)
 
     def _init_parsed_args(self, hide_errors):
         if hide_errors:
-            parser = self.ArgParseWrapper(description="To set an alarm sound file, set an env variable PyTimerAlarm to the absolute file path")
+            parser = self.ArgParseWrapper(
+                description="To set an alarm sound file, set an env variable PyTimerAlarm to the absolute file path")
         else:
             parser = argparse.ArgumentParser(
                 description="To set an alarm sound file, set an env variable PyTimerAlarm to the absolute file path")
         parser.add_argument("minutes", action="store", nargs="*", type=float)
         parser.add_argument("-seconds", "-s", action="store_true", help="Set if input should be interpreted as seconds")
-        parser.add_argument("-repeat", "-r",  nargs="*", type=int, help="Specifies fixed, random, or infinite number of repetitions")
+        parser.add_argument("-repeat", "-r", nargs="*", type=int,
+                            help="Specifies fixed, random, or infinite number of repetitions")
         parser.add_argument("-verbose", "-v", action="store_false", help="Call to turn off printing")
-        parser.add_argument("-sound", action="store", nargs="*", help="Set new sound to be played. Set to 'None' for no sound.")
-        parser.add_argument("-exec", "-e", action="store", nargs="*", help="Scripts to be executed when timer is complete.")
+        parser.add_argument("-sound", action="store", nargs="*",
+                            help="Set new sound to be played. Set to 'None' for no sound.")
+        parser.add_argument("-exec", "-e", action="store", nargs="*",
+                            help="Scripts to be executed when timer is complete.")
         parser.add_argument("-hours", "-hh", action="store_true", help="Set if input should be interpreted as hours")
-        #parser.add_argument("-stop", action="store_true", help="Starts stopwatch")
-        #Possible future options
-        #parser.add_argument("-par", action="store_true", help="Executes scripts in seperate thread")
-        #parser.add_argument("-pomo", "-p", action="store_true", help="Starts pomodoro timer.")
-        #parser.add_argument("-spar", action="store_true", help="Rings sound conncurrently with next timer")
+        # parser.add_argument("-seq", action="store_true", help="Interpret time argument as sequence of times")
+        # parser.add_argument("-stop", action="store_true", help="Starts stopwatch")
+        # Possible future options
+        # parser.add_argument("-par", action="store_true", help="Executes scripts in seperate thread")
+        # parser.add_argument("-pomo", "-p", action="store_true", help="Starts pomodoro timer.")
+        # parser.add_argument("-spar", action="store_true", help="Rings sound conncurrently with next timer")
 
-        #parser.add_argument("-t", "-time", action="store", help="Set timer start time- units depending on other flags")
-        #parser.add_argument("-seq", action="store_true", help="Interpret time argument as sequence of times")
-        #parser.add_argument("-ro", action="store_true", help="Calculate time repeat only one timer and use for all interations of timer")
-        #Feature to calculate next ring based on probability
-        #Mathmatical options
+        # parser.add_argument("-t", "-time", action="store", help="Set timer start time- units depending on other flags")
+        # parser.add_argument("-ro", action="store_true", help="Calculate time repeat only one timer and use for all interations of timer")
+        # Feature to calculate next ring based on probability
+        # Mathmatical options
 
 
 
@@ -246,8 +243,7 @@ class ArgumentParser():
     def validate_string(self, s):
         return self._validate_args(self._parser.parse_args(s.split(" ")))[0]
 
-
-    def _validate_args(self,args):
+    def _validate_args(self, args):
         is_valid = True
         arg_errors = []
 
@@ -255,17 +251,17 @@ class ArgumentParser():
             Validate minutes args
         '''
         if ((len(args.minutes) > 2)):
-                is_valid = False
-                arg_errors.append("Invalid number of parameters: minutes")
+            is_valid = False
+            arg_errors.append("Invalid number of parameters: minutes")
         elif (len(args.minutes) == 2):
             if (int(args.minutes[0]) > int(args.minutes[1])):
                 is_valid = False
-                arg_errors.append("Invalid order of parameters: minutes. {0} is greater than {1}".format(args.minutes[0], args.minutes[1]))
-
-
+                arg_errors.append(
+                    "Invalid order of parameters: minutes. {0} is greater than {1}".format(args.minutes[0],
+                                                                                           args.minutes[1]))
 
         if (args.repeat is not None):
-            if (len(args.repeat) == 0 or len(args.repeat) > 2):
+            if (len(args.repeat) > 2):
                 is_valid = False
                 arg_errors.append("Invalid number of parameters: -r")
             elif (len(args.repeat) == 2):
@@ -277,18 +273,15 @@ class ArgumentParser():
                     arg_errors.append("Invalid parameters: -r")
 
 
-
-
         if args.exec is not None:
             if len(args.exec) == 0:
                 is_valid = False
                 arg_errors.append("Invalid number of parameters: -exec")
 
         if args.sound is not None:
-             if len(args.sound) > 1:
-                 is_valid = False
-                 arg_errors.append("Invalid number of parameters: -sound")
-
+            if len(args.sound) > 1:
+                is_valid = False
+                arg_errors.append("Invalid number of parameters: -sound")
 
         if args.seconds and args.hours:
             is_valid = False
@@ -298,24 +291,26 @@ class ArgumentParser():
 
 
 class TimerAssembler():
-
     def assembleTimers(self, parsed_args=None):
         time_arg = parsed_args.minutes
         mainTimer = None
         time = 0
+        inf = False
         repeat = 1
         if (parsed_args.repeat is not None):
             if len(parsed_args.repeat) == 1:
                 repeat = int(parsed_args.repeat[0])
+            elif len(parsed_args.repeat) == 2:
+                repeat = random.randint(int(parsed_args.repeat[0]), int(parsed_args.repeat[1]))
             else:
-                repeat = random.randint(int(parsed_args.repeat[0]),int(parsed_args.repeat[1]))
+                repeat = 1
+                inf = True
 
         for x in range(repeat):
             if len(parsed_args.minutes) == 1:
                 time = parsed_args.minutes[0]
-            else: #if len = 2
-                time = random.uniform(parsed_args.minutes[0],parsed_args.minutes[1])
-
+            else:  # if len = 2
+                time = random.uniform(parsed_args.minutes[0], parsed_args.minutes[1])
 
             if not parsed_args.seconds and not parsed_args.hours:
                 time = time * 60
@@ -323,7 +318,7 @@ class TimerAssembler():
                 time = time * 3600
 
             if mainTimer is None:
-                mainTimer = Timer()
+                mainTimer = Timer(infinite=inf)
             else:
                 newTimer = Timer(newTimer=mainTimer)
                 mainTimer = newTimer
@@ -338,7 +333,9 @@ class TimerAssembler():
                 else:
                     mainTimer.set_audio_sound("")
 
+
         return mainTimer
+
 
 if __name__ == "__main__":
     assembler = TimerAssembler()
