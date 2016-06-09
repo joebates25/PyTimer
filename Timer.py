@@ -87,7 +87,7 @@ class Timer(threading.Thread):
                     self._pauseTime = 0
                 timeRemaining = endTime - time.time()
                 if timeRemaining > 0:
-                    self._message("Countdown: " + self._seconds_to_time_string(timeRemaining), carraige=True)
+                    self._message(self._seconds_to_time_string(timeRemaining), carraige=True)
                     # time.sleep(.1)
                 else:
                     self._finished = True
@@ -200,15 +200,22 @@ class Timer(threading.Thread):
 
 class ArgumentParser():
 
+    '''
+        Wrapper class written to disable error messages from being printed to the screen in the event of testing
+    '''
+    class ArgParseWrapper(argparse.ArgumentParser):
+        def error(self, message):
+            pass
 
-    def __init__(self):
-        self._parser = self._init_parsed_args()
+    def __init__(self, hide_errors = False):
+        self._parser = self._init_parsed_args(hide_errors)
 
-        pass
-
-    def _init_parsed_args(self):
-        parser = argparse.ArgumentParser(description="To set an alarm sound file, set an env variable PyTimerAlarm to the absolute file path")
-
+    def _init_parsed_args(self, hide_errors):
+        if hide_errors:
+            parser = self.ArgParseWrapper(description="To set an alarm sound file, set an env variable PyTimerAlarm to the absolute file path")
+        else:
+            parser = argparse.ArgumentParser(
+                description="To set an alarm sound file, set an env variable PyTimerAlarm to the absolute file path")
         parser.add_argument("minutes", action="store", nargs="*", type=float)
         parser.add_argument("-seconds", "-s", action="store_true", help="Set if input should be interpreted as seconds")
         parser.add_argument("-repeat", "-r",  nargs="*", type=int, help="Specifies fixed, random, or infinite number of repetitions")
@@ -236,8 +243,8 @@ class ArgumentParser():
         args = self._parser.parse_args()
         return self._validate_args(args)
 
-    def parse_string(self, s):
-        return self._parser.parse_args(s)
+    def validate_string(self, s):
+        return self._validate_args(self._parser.parse_args(s.split(" ")))[0]
 
 
     def _validate_args(self,args):
@@ -292,9 +299,6 @@ class ArgumentParser():
 
 class TimerAssembler():
 
-    def alert_starting(self, timer):
-        pass
-
     def assembleTimers(self, parsed_args=None):
         time_arg = parsed_args.minutes
         mainTimer = None
@@ -312,8 +316,11 @@ class TimerAssembler():
             else: #if len = 2
                 time = random.uniform(parsed_args.minutes[0],parsed_args.minutes[1])
 
-            time = time          if  parsed_args.seconds   else time * 60
-            time = time * 3600   if parsed_args.hours      else time
+
+            if not parsed_args.seconds and not parsed_args.hours:
+                time = time * 60
+            elif parsed_args.hours:
+                time = time * 3600
 
             if mainTimer is None:
                 mainTimer = Timer()
@@ -326,20 +333,17 @@ class TimerAssembler():
                 for script in parsed_args.exec:
                     mainTimer.add_script(script)
             if parsed_args.sound != None:
-                if parsed_args.sound[0] != "None":
+                if len(parsed_args.sound) > 0 and parsed_args.sound[0] != "None":
                     mainTimer.set_audio_sound(parsed_args.sound[0])
                 else:
                     mainTimer.set_audio_sound("")
 
         return mainTimer
 
-
-
-
-
 if __name__ == "__main__":
     assembler = TimerAssembler()
     argParser = ArgumentParser()
+
     is_valid, parsed_args, errors = argParser.parse_arguments()
     if is_valid:
         timer = assembler.assembleTimers(parsed_args)

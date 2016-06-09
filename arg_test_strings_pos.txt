@@ -1,13 +1,26 @@
-
 3
-3 3
+3.5
+3 -hh
+3 3.5
+4.5 7.6 -r 4
 3 4
 3 4 -s
+3 4 -hh
 3 4 -r 0
 3 4 -r 4
 3 4 -r 4 5
 3 4 -r 4 4
 3 3 -r 4 4
 3 3 -r 4 5
-3 4 -sound
+3 3 -r 4 5 -s
+3 3 -r 4 5 -hh
+4 -r 3 4 -sound None -s
+4 -r 3 4 -sound None -hh
+4 -r 3 4 -sound None -hh -exec script.sh
+4 -r 3 -exec script.sh script2.sh script3.sh
+3 4 -s -sound
+3 4 -hh -sound
 3 4 -sound Hello.wav
+3 -r 4 -v -sound None -exec script.sh
+3 -r 4 -v -sound None -exec script.sh -hh
+3 -r 4 -v -sound None -exec script.sh -s

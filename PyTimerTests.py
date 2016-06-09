@@ -1,17 +1,15 @@
 __author__ = 'josephbates'
 
 import argparse
-from Main import validate_args, init_parse_args
+from PyTimer.Timer import  ArgumentParser
 
 def test_working_strings(parser):
     error_flag = False
     for test_arg_string in open("arg_test_strings_pos.txt").readlines():
         if not test_arg_string.startswith("#"):
+            test_arg_string = test_arg_string.replace("\n", "")
             try:
-                if (test_arg_string.replace("\n", "") == ""):
-                    assert validate_args(parser.parse_args(""))[0] is True
-                else:
-                    assert validate_args(parser.parse_args(test_arg_string.replace("\n", "").split(" ")))[0] is True
+                assert parser.validate_string(test_arg_string) is True
             except:
                 print("Assertion Error for string (should pass): " + test_arg_string)
                 error_flag = True
@@ -23,16 +21,17 @@ def test_failing_strings(parser):
     error_flag = False
     for test_arg_string in open("arg_test_strings_neg.txt").readlines():
         if not test_arg_string.startswith("#"):
+            test_arg_string = test_arg_string.replace("\n", "")
             try:
-                assert validate_args(parser.parse_args(test_arg_string.replace("\n", "").split(" ")))[0] is False
-            except:
+                assert parser.validate_string(test_arg_string) is False
+            except Exception as e:
                 print("Assertion Error for string (should fail): " + test_arg_string)
                 error_flag = True
     return error_flag
 
 def main():
-    parser = init_parse_args()
-    error_flag = False;
+    parser = ArgumentParser(hide_errors=True)
+    error_flag = False
     error_flag = test_working_strings(parser)
     error_flag = test_failing_strings(parser)
 
