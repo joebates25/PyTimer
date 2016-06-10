@@ -240,6 +240,15 @@ class Timer(threading.Thread):
     def decrement_time(self):
         self._endTime -= 60
 
+    def copy(self):
+        t = Timer(manager=self._manager, infinite=self._infinite)
+        t.set_time(self._time)
+        t.set_verbose(self._verbose)
+        t.set_audio_sound(self._audioSound)
+        t.set_next_timer(self._newTimer)
+        for script in self._execScript:
+            t.add_script(script)
+        return t
 
 
 class ArgumentParser():
