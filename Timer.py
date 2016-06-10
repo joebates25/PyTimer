@@ -86,6 +86,9 @@ class Timer(threading.Thread):
     _rand = random.random()
     _infinite = False
     _manager = None
+    _startTime = 0
+    _endTime = 0
+    _timeRemaining = 0
 
     def __init__(self, newTimer=None, manager=None, infinite = False):
         '''
@@ -107,18 +110,17 @@ class Timer(threading.Thread):
         :return: Runs timer. This is where the timer calls its manager
         '''
         self._manager.receive_Timer(self)
-        startTime = time.time()
-        endTime = startTime + self._time
-        timeRemaining = endTime - startTime
+        self._startTime = time.time()
+        self._endTime = self._startTime + self._time
+        self.timeRemaining = self._endTime - self._startTime
         while True:
             if self._running:
                 if self._pauseTime != 0:
-                    endTime += time.time() - self._pauseTime
+                    self._endTime += time.time() - self._pauseTime
                     self._pauseTime = 0
-                timeRemaining = endTime - time.time()
-                if timeRemaining > 0:
-                    self._message(self._seconds_to_time_string(timeRemaining), carraige=True)
-                    # time.sleep(.1)
+                self.timeRemaining = self._endTime - time.time()
+                if self.timeRemaining > 0:
+                    self._message(self._seconds_to_time_string(self.timeRemaining), carraige=True)
                 else:
                     self._finished = True
                     self._onFinished()
@@ -198,7 +200,6 @@ class Timer(threading.Thread):
         elif self._newTimer != None:
             self._newTimer.run()
 
-
     def toggle(self):
         '''
         Toggles timer on/off
@@ -212,6 +213,9 @@ class Timer(threading.Thread):
 
     def set_time(self, t):
         self._time = t
+
+    def set_next_timer(self,t):
+        self._newTimer = t
 
     def _seconds_to_time_string(self, s):
         '''
@@ -229,6 +233,13 @@ class Timer(threading.Thread):
         if s > 0:
             milliseconds = int(s * 1000)
         return "{0:02}:{1:02}:{2:02}:{3:04}".format(hours, minutes, seconds, milliseconds)
+
+    def increment_time(self):
+        self._endTime += 60
+
+    def decrement_time(self):
+        self._endTime -= 60
+
 
 
 class ArgumentParser():
@@ -271,8 +282,6 @@ class ArgumentParser():
         # parser.add_argument("-ro", action="store_true", help="Calculate time repeat only one timer and use for all interations of timer")
         # Feature to calculate next ring based on probability
         # Mathmatical options
-
-
 
         return parser
 
@@ -387,12 +396,19 @@ class TimerManager():
         self._currentActiveTimer.start()
         while(True):
             char = getch()
-            if str(char) == "b't'":
-                self._currentActiveTimer.toggle()
+            self._process_char(str(char)[2])
 
 
     def receive_Timer(self, t):
         self._currentActiveTimer = t
+
+    def _process_char(self, c):
+        if c == 't':
+            self._currentActiveTimer.toggle()
+        elif c == 'd':
+            self._currentActiveTimer.decrement_time()
+        elif c == 'i':
+            self._currentActiveTimer.increment_time()
 
 
 if __name__ == "__main__":
