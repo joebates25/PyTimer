@@ -418,6 +418,9 @@ class TimerManager():
             self._currentActiveTimer.decrement_time()
         elif c == 'i':
             self._currentActiveTimer.increment_time()
+        elif c == 'r':
+            copy = self._currentActiveTimer.copy()
+            self._currentActiveTimer.set_next_timer(copy)
 
 
 if __name__ == "__main__":
