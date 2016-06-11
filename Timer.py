@@ -10,41 +10,39 @@ import argparse
 class _Getch:
     """Gets a single character from standard input.  Does not echo to the
 screen."""
+
+    class _GetchUnix:
+        def __init__(self):
+            import tty, sys
+
+        def __call__(self):
+            import sys, tty, termios
+            fd = sys.stdin.fileno()
+            old_settings = termios.tcgetattr(fd)
+            try:
+                tty.setraw(sys.stdin.fileno())
+                ch = sys.stdin.read(1)
+            finally:
+                termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+            return ch
+
+
+    class _GetchWindows:
+        def __init__(self):
+            import msvcrt
+
+        def __call__(self):
+            import msvcrt
+            return msvcrt.getch()
+
+
     def __init__(self):
         try:
-            self.impl = _GetchWindows()
+            self.impl = self._GetchWindows()
         except ImportError:
-            self.impl = _GetchUnix()
+            self.impl = self._GetchUnix()
 
     def __call__(self): return self.impl()
-
-
-class _GetchUnix:
-    def __init__(self):
-        import tty, sys
-
-    def __call__(self):
-        import sys, tty, termios
-        fd = sys.stdin.fileno()
-        old_settings = termios.tcgetattr(fd)
-        try:
-            tty.setraw(sys.stdin.fileno())
-            ch = sys.stdin.read(1)
-        finally:
-            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-        return ch
-
-
-class _GetchWindows:
-    def __init__(self):
-        import msvcrt
-
-    def __call__(self):
-        import msvcrt
-        return msvcrt.getch()
-
-
-
 
 
 class Sound:
@@ -68,7 +66,7 @@ class Sound:
 
     def _mac_os_sound(self, sound):
         import os
-        print("afplay " + str(sound).replace(".wav", "") + ".wav")
+        #print("afplay " + str(sound).replace(".wav", "") + ".wav")
         os.system("afplay " + sound)
 
 
@@ -81,7 +79,7 @@ class Timer(threading.Thread):
     _pauseTime = 0
     _player = Sound()
     _reverse = False
-    _audioSound = ""  ##os.environ[ALARM_SOUND_ENVIRONMENT_VARIABLE]
+    _audioSound = os.environ[ALARM_SOUND_ENVIRONMENT_VARIABLE]
     _execScript = []
     _rand = random.random()
     _infinite = False
@@ -125,7 +123,7 @@ class Timer(threading.Thread):
                     self._finished = True
                     self._onFinished()
                     self._message("Done", False)
-                    sys.exit()
+                    os._exit(0)
 
     def finished(self):
         '''
@@ -164,7 +162,7 @@ class Timer(threading.Thread):
         '''
         if self._verbose:
             if not carraige:
-                print("\n" + m)
+                print("\r" + m + "                                   ")
             else:
                 print("\r" + m, end="")
 
@@ -208,8 +206,10 @@ class Timer(threading.Thread):
         if self._running:
             self._running = False
             self._pauseTime = time.time()
+            self._message("Paused")
         else:
             self._running = True
+
 
     def set_time(self, t):
         self._time = t
@@ -256,6 +256,16 @@ class ArgumentParser():
         Wrapper class written to disable error messages from being printed to the screen in the event of testing
     '''
 
+    usage = "-----PyTimer-----------\n" \
+            "Key Mappings:\n" \
+            "t - toggle timer on/off\n" \
+            "r - repeat the current timer after complete\n" \
+            "i - increment current timer by 1 minute \n" \
+            "d - decrement current timer by 1 minute\n" \
+            "m - mute current timer\n" \
+            "q - quit\n\n" \
+            "To set an alarm sound file, set an env variable [PyTimerAlarm] (no square brackets) to the absolute file path"
+
     class ArgParseWrapper(argparse.ArgumentParser):
         def error(self, message):
             pass
@@ -266,10 +276,10 @@ class ArgumentParser():
     def _init_parsed_args(self, hide_errors):
         if hide_errors:
             parser = self.ArgParseWrapper(
-                description="To set an alarm sound file, set an env variable PyTimerAlarm to the absolute file path")
+                description=self.usage)
         else:
             parser = argparse.ArgumentParser(
-                description="To set an alarm sound file, set an env variable PyTimerAlarm to the absolute file path")
+                description=self.usage)
         parser.add_argument("minutes", action="store", nargs="*", type=float)
         parser.add_argument("-seconds", "-s", action="store_true", help="Set if input should be interpreted as seconds")
         parser.add_argument("-repeat", "-r", nargs="*", type=int,
@@ -349,7 +359,12 @@ class ArgumentParser():
 
 
 class TimerAssembler():
-    def assembleTimers(self, parsed_args=None, manager=None):
+    '''
+    This takes a set of parsed arguments and assembled a chain of timers based on the args
+    '''
+
+    @staticmethod
+    def assembleTimers(parsed_args, manager):
         time_arg = parsed_args.minutes
         mainTimer = None
         time = 0
@@ -394,7 +409,13 @@ class TimerAssembler():
 
         return mainTimer
 
+
 class TimerManager():
+    '''
+    This class takes a timer, runs it, and manages the keystrokes sent to the timer from the user
+    -Keystroke processing is handled in process_char
+    -Timers call receive_Timer to update timer manager that a new timer is starting
+    '''
 
     _currentActiveTimer = None
     def set_initial_timer(self,t):
@@ -405,32 +426,41 @@ class TimerManager():
         self._currentActiveTimer.start()
         while(True):
             char = getch()
-            self._process_char(str(char)[2])
+            self._process_char(str(char).replace("b'", "").replace("'", ""))
 
 
     def receive_Timer(self, t):
         self._currentActiveTimer = t
 
     def _process_char(self, c):
+        #Toggle Timer
         if c == 't':
             self._currentActiveTimer.toggle()
+        #Decrement Timer by 1 Minute
         elif c == 'd':
             self._currentActiveTimer.decrement_time()
+        #Increment Timer by 1 Minute
         elif c == 'i':
             self._currentActiveTimer.increment_time()
+        #Run current timer again
         elif c == 'r':
             copy = self._currentActiveTimer.copy()
             self._currentActiveTimer.set_next_timer(copy)
+        #Mute timer sound
+        elif c == 'm':
+            self._currentActiveTimer.set_audio_sound("")
+        #quit
+        elif c == 'q':
+            os._exit(0)
 
 
 if __name__ == "__main__":
-    assembler = TimerAssembler()
     argParser = ArgumentParser()
 
     is_valid, parsed_args, errors = argParser.parse_arguments()
     if is_valid:
         manager = TimerManager()
-        timer = assembler.assembleTimers(parsed_args, manager=manager)
+        timer = TimerAssembler.assembleTimers(parsed_args=parsed_args, manager=manager)
         manager.set_initial_timer(timer)
         manager.start_Timers()
     else:
