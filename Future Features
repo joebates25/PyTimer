@@ -1,0 +1,23 @@
+Status Text
+Time Sequences
+Next timer ring probability
+Different types of repeat probabilities (binomial dist, etc)
+different sound env variables
+    $PyTimerAlarm[var] is the environment variable for the sound file to be played
+     where var is given to the -sound arg
+     E.g. timer 5 -sound 1 ---> timer of 5 minutes playing sound at file $PyTimerAlarm1
+          timer 7 -s -sound Short ---> timer of 7 seconds playing sound at file $PyTimerAlarmShort
+
+
+Verbose Levels
+    0-none
+    1-Just time
+    2-Full Status
+
+Pomodoro
+Stopwatch
+
+Key Commands:
+-Stop script from executing
+-Cycle verbose status
+
