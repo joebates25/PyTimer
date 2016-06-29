@@ -87,8 +87,9 @@ class Timer(threading.Thread):
     _startTime = 0
     _endTime = 0
     _timeRemaining = 0
+    _next_probability_repeat = 1
 
-    def __init__(self, newTimer=None, manager=None, infinite = False):
+    def __init__(self, newTimer=None, manager=None, infinite = False, next_probability_repeat=1):
         '''
         Initilizes Timer. Sets manager to call to when timer is started as well as new Timer to call if such a timer
             exists
@@ -101,6 +102,7 @@ class Timer(threading.Thread):
         self._rand = random.random()
         self._newTimer = newTimer
         self._infinite = infinite
+        self._next_probability_repeat = next_probability_repeat
 
     def run(self):
         '''
@@ -122,7 +124,6 @@ class Timer(threading.Thread):
                 else:
                     self._finished = True
                     self._onFinished()
-                    self._message("Done", False)
                     os._exit(0)
 
     def finished(self):
@@ -162,7 +163,7 @@ class Timer(threading.Thread):
         '''
         if self._verbose:
             if not carraige:
-                print("\r" + m + "                                   ")
+                print("\r" + m + (" " * 35))
             else:
                 print("\r" + m, end="")
 
@@ -206,13 +207,16 @@ class Timer(threading.Thread):
         if self._running:
             self._running = False
             self._pauseTime = time.time()
-            self._message("Paused")
+            self._message("Paused" + " " * 10, carraige=True)
         else:
             self._running = True
 
 
     def set_time(self, t):
         self._time = t
+
+    def set_next_probability(self, p):
+        self._next_probability_repeat = p
 
     def set_next_timer(self,t):
         self._newTimer = t
@@ -246,6 +250,7 @@ class Timer(threading.Thread):
         t.set_verbose(self._verbose)
         t.set_audio_sound(self._audioSound)
         t.set_next_timer(self._newTimer)
+        t.set_next_probability(self._next_probability_repeat)
         for script in self._execScript:
             t.add_script(script)
         return t
@@ -290,15 +295,7 @@ class ArgumentParser():
         parser.add_argument("-exec", "-e", action="store", nargs="*",
                             help="Scripts to be executed when timer is complete.")
         parser.add_argument("-hours", "-hh", action="store_true", help="Set if input should be interpreted as hours")
-        # parser.add_argument("-seq", action="store_true", help="Interpret time argument as sequence of times")
-        # parser.add_argument("-stop", action="store_true", help="Starts stopwatch")
-        # Possible future options
-        # parser.add_argument("-par", action="store_true", help="Executes scripts in seperate thread")
-        # parser.add_argument("-pomo", "-p", action="store_true", help="Starts pomodoro timer.")
-        # parser.add_argument("-spar", action="store_true", help="Rings sound conncurrently with next timer")
 
-        # parser.add_argument("-t", "-time", action="store", help="Set timer start time- units depending on other flags")
-        # parser.add_argument("-ro", action="store_true", help="Calculate time repeat only one timer and use for all interations of timer")
         # Feature to calculate next ring based on probability
         # Mathmatical options
 
